@@ -36,9 +36,12 @@ class Beacon(endpoint: String) {
 
   def query(s: Option[Resource], p: Option[Resource], o: Option[Resource]): Future[Model] = {
     s.orElse(o) match {
-      case None => Future.failed(new IllegalRequestException(
-        ErrorInfo("Either subject or object must be provided.", "Knowledge beacons do not support query by predicate only."),
-        StatusCodes.BadRequest))
+      case None => p match {
+        case None => Future(beaconResponseToModel(Nil, modelURI(None, None, None)))
+        case Some(prop) => Future.failed(new IllegalRequestException(
+          ErrorInfo("Either subject or object must be provided.", "Knowledge beacons do not support query by predicate only."),
+          StatusCodes.BadRequest))
+      }
       case Some(concept) =>
         val query = Uri.Query(
           "c" -> Main.prefixes.getCurie(concept.getURI).orElse(concept.getURI),
