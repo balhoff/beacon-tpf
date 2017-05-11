@@ -95,7 +95,7 @@ class Beacon(endpoint: String) {
   }
 
   private def beaconStatementToTriple(bs: BeaconStatement): Statement = {
-    def toResource(id: String): Resource = ResourceFactory.createResource(s"http://example.org/$id")
+    def toResource(id: String): Resource = ResourceFactory.createResource(id)
     ResourceFactory.createStatement(
       toResource(Main.prefixes.getIri(bs.subject.id).orElse(bs.subject.id)),
       ResourceFactory.createProperty(toResource(Main.prefixes.getIri(bs.predicate.id).orElse(bs.predicate.id)).getURI),
