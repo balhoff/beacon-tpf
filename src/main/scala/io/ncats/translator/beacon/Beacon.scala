@@ -59,7 +59,7 @@ class Beacon(endpoint: String) {
     s.foreach(params += "s" -> _.getURI)
     p.foreach(params += "p" -> _.getURI)
     o.foreach(params += "o" -> _.getURI)
-    ResourceFactory.createResource(s"$server/pattern?${Uri.Query(params)}")
+    ResourceFactory.createResource(s"$server/beacon/$endpoint/pattern?${Uri.Query(params)}")
   }
 
   private def matches(bs: BeaconStatement, s: Option[Resource], p: Option[Resource], o: Option[Resource]): Boolean = {
@@ -77,7 +77,7 @@ class Beacon(endpoint: String) {
     model.add(ResourceFactory.createStatement(dataset, VOID.subset, modelURI))
     val form = ResourceFactory.createResource()
     model.add(ResourceFactory.createStatement(dataset, ResourceFactory.createProperty(s"$Hydra#search"), form))
-    model.add(ResourceFactory.createStatement(form, ResourceFactory.createProperty(s"$Hydra#template"), ResourceFactory.createPlainLiteral(s"$server/pattern{?s,p,o}")))
+    model.add(ResourceFactory.createStatement(form, ResourceFactory.createProperty(s"$Hydra#template"), ResourceFactory.createPlainLiteral(s"$server/beacon/$endpoint/pattern{?s,p,o}")))
     val subj = ResourceFactory.createResource()
     val pred = ResourceFactory.createResource()
     val obj = ResourceFactory.createResource()
