@@ -98,13 +98,10 @@ class Beacon(endpoint: String) {
     model
   }
 
-  private def beaconStatementToTriple(bs: BeaconStatement): Statement = {
-    def toResource(id: String): Resource = ResourceFactory.createResource(id)
-    ResourceFactory.createStatement(
-      toResource(Main.prefixes.getIri(bs.subject.id).orElse(bs.subject.id)),
-      ResourceFactory.createProperty(toResource(Main.prefixes.getIri(bs.predicate.id).orElse(bs.predicate.id)).getURI),
-      toResource(Main.prefixes.getIri(bs.`object`.id).orElse(bs.`object`.id)))
-  }
+  private def beaconStatementToTriple(bs: BeaconStatement): Statement = ResourceFactory.createStatement(
+    ResourceFactory.createResource(Main.prefixes.getIri(bs.subject.id).orElse(bs.subject.id)),
+    ResourceFactory.createProperty(Main.prefixes.getIri(bs.predicate.id).orElse(bs.predicate.id)),
+    ResourceFactory.createResource(Main.prefixes.getIri(bs.`object`.id).orElse(bs.`object`.id)))
 
 }
 
