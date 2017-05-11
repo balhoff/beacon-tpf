@@ -1,6 +1,7 @@
 package io.ncats.translator.beacon
 
 import java.io.StringWriter
+import java.net.URLEncoder
 
 import scala.concurrent.Future
 
@@ -18,14 +19,12 @@ import BeaconStatements.BeaconStatement
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshaller
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.unmarshalling.FromStringUnmarshaller
-
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.unmarshalling.Unmarshaller.stringUnmarshaller
 import akka.stream.ActorMaterializer
 import spray.json._
-import akka.http.scaladsl.unmarshalling.Unmarshaller
 
 class Beacon(endpoint: String) {
 
@@ -53,13 +52,15 @@ class Beacon(endpoint: String) {
 
   private def port = if (Main.port == 80) "" else s":${Main.port}"
   private val server: String = s"http://${Main.hostname}$port"
+  private val encodedEndpoint = URLEncoder.encode(endpoint, "utf-8")
 
   private def modelURI(s: Option[Resource], p: Option[Resource], o: Option[Resource]): Resource = {
     var params = Map.empty[String, String]
     s.foreach(params += "s" -> _.getURI)
     p.foreach(params += "p" -> _.getURI)
     o.foreach(params += "o" -> _.getURI)
-    ResourceFactory.createResource(s"$server/beacon/$endpoint/pattern?${Uri.Query(params)}")
+
+    ResourceFactory.createResource(s"$server/beacon/$encodedEndpoint/pattern?${Uri.Query(params)}")
   }
 
   private def matches(bs: BeaconStatement, s: Option[Resource], p: Option[Resource], o: Option[Resource]): Boolean = {
@@ -77,7 +78,7 @@ class Beacon(endpoint: String) {
     model.add(ResourceFactory.createStatement(dataset, VOID.subset, modelURI))
     val form = ResourceFactory.createResource()
     model.add(ResourceFactory.createStatement(dataset, ResourceFactory.createProperty(s"$Hydra#search"), form))
-    model.add(ResourceFactory.createStatement(form, ResourceFactory.createProperty(s"$Hydra#template"), ResourceFactory.createPlainLiteral(s"$server/beacon/$endpoint/pattern{?s,p,o}")))
+    model.add(ResourceFactory.createStatement(form, ResourceFactory.createProperty(s"$Hydra#template"), ResourceFactory.createPlainLiteral(s"$server/beacon/$encodedEndpoint/pattern{?s,p,o}")))
     val subj = ResourceFactory.createResource()
     val pred = ResourceFactory.createResource()
     val obj = ResourceFactory.createResource()
