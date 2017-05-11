@@ -18,11 +18,14 @@ import BeaconStatements.BeaconStatement
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshaller
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
+import akka.http.scaladsl.unmarshalling.FromStringUnmarshaller
+
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.unmarshalling.Unmarshaller.stringUnmarshaller
 import akka.stream.ActorMaterializer
 import spray.json._
+import akka.http.scaladsl.unmarshalling.Unmarshaller
 
 class Beacon(endpoint: String) {
 
@@ -32,13 +35,15 @@ class Beacon(endpoint: String) {
   implicit val materializer = ActorMaterializer()
   import BeaconStatements.BeaconStatementProtocol._
 
-  def query(s: Option[String], p: Option[String], o: Option[String]): Future[Model] = {
+  def query(s: Option[Resource], p: Option[Resource], o: Option[Resource]): Future[Model] = {
     s.orElse(o) match {
       case None => Future.failed(new IllegalRequestException(
         ErrorInfo("Either subject or object must be provided.", "Knowledge beacons do not support query by predicate only."),
         StatusCodes.BadRequest))
       case Some(concept) =>
-        val query = Uri.Query("c" -> concept, "pageSize" -> "1000000")
+        val query = Uri.Query(
+          "c" -> Main.prefixes.getCurie(concept.getURI).orElse(concept.getURI),
+          "pageSize" -> "1000000")
         for {
           response <- Http().singleRequest(HttpRequest(uri = s"$endpoint/statements/?$query"))
           responseString <- Unmarshal(response).to[String]
@@ -49,18 +54,18 @@ class Beacon(endpoint: String) {
   private def port = if (Main.port == 80) "" else s":${Main.port}"
   private val server: String = s"http://${Main.hostname}$port"
 
-  private def modelURI(s: Option[String], p: Option[String], o: Option[String]): Resource = {
+  private def modelURI(s: Option[Resource], p: Option[Resource], o: Option[Resource]): Resource = {
     var params = Map.empty[String, String]
-    s.foreach(params += "s" -> _)
-    p.foreach(params += "p" -> _)
-    o.foreach(params += "o" -> _)
+    s.foreach(params += "s" -> _.getURI)
+    p.foreach(params += "p" -> _.getURI)
+    o.foreach(params += "o" -> _.getURI)
     ResourceFactory.createResource(s"$server/pattern?${Uri.Query(params)}")
   }
 
-  private def matches(bs: BeaconStatement, s: Option[String], p: Option[String], o: Option[String]): Boolean = {
-    val sMatch = s.map(_ == bs.subject.id).getOrElse(true)
-    val pMatch = p.map(_ == bs.predicate.id).getOrElse(true)
-    val oMatch = o.map(_ == bs.`object`.id).getOrElse(true)
+  private def matches(bs: BeaconStatement, s: Option[Resource], p: Option[Resource], o: Option[Resource]): Boolean = {
+    val sMatch = s.map(_.getURI == Main.prefixes.getIri(bs.subject.id).orElse(bs.subject.id)).getOrElse(true)
+    val pMatch = p.map(_.getURI == Main.prefixes.getIri(bs.predicate.id).orElse(bs.predicate.id)).getOrElse(true)
+    val oMatch = o.map(_.getURI == Main.prefixes.getIri(bs.`object`.id).orElse(bs.`object`.id)).getOrElse(true)
     sMatch && pMatch && oMatch
   }
 
@@ -92,9 +97,9 @@ class Beacon(endpoint: String) {
   private def beaconStatementToTriple(bs: BeaconStatement): Statement = {
     def toResource(id: String): Resource = ResourceFactory.createResource(s"http://example.org/$id")
     ResourceFactory.createStatement(
-      toResource(bs.subject.id),
-      ResourceFactory.createProperty(toResource(bs.predicate.id).getURI),
-      toResource(bs.`object`.id))
+      toResource(Main.prefixes.getIri(bs.subject.id).orElse(bs.subject.id)),
+      ResourceFactory.createProperty(toResource(Main.prefixes.getIri(bs.predicate.id).orElse(bs.predicate.id)).getURI),
+      toResource(Main.prefixes.getIri(bs.`object`.id).orElse(bs.`object`.id)))
   }
 
 }
@@ -108,5 +113,7 @@ object Beacon {
     RDFDataMgr.write(writer, model, RDFFormat.TURTLE)
     writer.toString
   }
+
+  implicit val resourceUnmarshaller = Unmarshaller.strict(ResourceFactory.createResource)
 
 }

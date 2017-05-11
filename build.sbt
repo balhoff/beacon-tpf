@@ -31,6 +31,7 @@ libraryDependencies ++= {
     "ch.megard"                   %% "akka-http-cors"         % "0.2.1",
     "io.spray"                    %%  "spray-json"            % "1.3.3",
     "org.apache.jena"             %  "apache-jena-libs"       % "3.2.0" pomOnly(),
+    "org.prefixcommons"           %  "curie-util"             % "0.0.2",
     "com.typesafe.scala-logging"  %% "scala-logging"          % "3.4.0",
     "ch.qos.logback"              %  "logback-classic"        % "1.1.7",
     "org.codehaus.groovy"         %  "groovy-all"             % "2.4.6"
